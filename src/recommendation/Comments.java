@@ -19,8 +19,9 @@ public class Comments {
 	public void addComments(String json){
 		Type type = new TypeToken<Map<String, Comment>>(){}.getType();
 		Map<String, Comment> toAdd = gson.fromJson(json, type);
-		for(Map.Entry<String, Comment> entry : toAdd.entrySet())
-			properties.put(entry.getKey(), entry.getValue());
+		if(toAdd != null)
+			for(Map.Entry<String, Comment> entry : toAdd.entrySet())
+				properties.put(entry.getKey(), entry.getValue());
 	}
 	
 	public String toString()

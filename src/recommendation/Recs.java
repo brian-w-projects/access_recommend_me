@@ -19,8 +19,9 @@ public class Recs{
 	public void addRecs(String json){
 		Type type = new TypeToken<Map<String, Rec>>(){}.getType();
 		Map<String, Rec> toAdd = gson.fromJson(json, type);
-		for(Map.Entry<String, Rec> entry : toAdd.entrySet())
-			properties.put(entry.getKey(), entry.getValue());
+		if(toAdd != null)
+			for(Map.Entry<String, Rec> entry : toAdd.entrySet())
+				properties.put(entry.getKey(), entry.getValue());
 	}
 	
 	public String toString()
