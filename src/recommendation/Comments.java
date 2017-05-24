@@ -29,7 +29,7 @@ public class Comments {
 		StringBuilder sb = new StringBuilder();
 		for(Map.Entry<String, Comment> entry : properties.entrySet())
 		{
-			sb.append(entry.getValue()+"\n");
+			sb.append(entry.getValue()+"\n\n");
 		}
 		return(sb.toString());
 	}

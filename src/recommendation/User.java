@@ -18,6 +18,6 @@ public class User {
 	
 	public String toString(){
 		return(username + " Recs: " + recs + " Comments: " + comments + " Following: " + following_count + " Followed By: " + followed_by_count +
-				"\nAbout Me:\n" + about_me);
+				"\nAbout Me:\n" + about_me+"\n");
 	}
 }

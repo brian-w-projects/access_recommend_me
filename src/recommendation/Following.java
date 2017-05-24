@@ -40,6 +40,7 @@ public class Following {
 		{
 			sb.append(entry.getKey() + " " + entry.getValue()+"\n");
 		}
+		sb.append("\n");
 		return(sb.toString());
 	
 	}
