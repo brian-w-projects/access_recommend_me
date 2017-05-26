@@ -1,6 +1,6 @@
 package recommendation;
 
-public class User {
+public class User extends APIElement{
 	private String about_me;
 	private int comments;
 	private boolean confirmed;
@@ -14,6 +14,16 @@ public class User {
 	
 	
 	public User(String json){	
+	}
+	
+	public String headerRepr(){
+		return("about_me,comments,confirmed,display,followed_by_count,following_count,id,member_since,recs,username");
+	}
+	
+	public String repr()
+	{
+		return("\""+about_me+"\","+comments+","+confirmed+","+display+","+followed_by_count+","+following_count+","+id+","+member_since+","+recs+","+username);
+	
 	}
 	
 	public String toString(){

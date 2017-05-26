@@ -2,6 +2,8 @@ package recommendation;
 
 import com.google.gson.Gson;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -14,15 +16,13 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Option.Builder;
-import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang3.StringUtils;
+
+//import org.apache.commons.lang3.StringUtils;
+//import org.apache.commons.cli.Option.Builder;
+//import org.apache.commons.cli.OptionGroup;
 //import java.io.InputStream;
-import java.io.File;
-import java.io.FileReader;
-import java.io.BufferedReader;
 //import java.io.OutputStream;
 //import java.net.Authenticator;
 //import java.net.PasswordAuthentication;
@@ -39,7 +39,7 @@ public class API
 	public final String URLBASE = "http://rec-me.herokuapp.com/api1/";
 	public static Gson gson = new Gson();
 	public static Scanner in = new Scanner(System.in);
-
+	public APIWriter writer;
 	
 	public API(String[] args) throws IOException{
 		Options options = new Options();
@@ -56,6 +56,14 @@ public class API
 			String token = gson.fromJson(sendGET(URLBASE + "token/new", encoded_login), Token.class).toString() + ":";
 			credentials = new String(Base64.getEncoder().encode(token.getBytes()));
 			
+			if(cmd.hasOption("write")){
+				System.out.println("Write to file " + cmd.getOptionValue("write"));
+				writer = new APIWriter(cmd.getOptionValue("write"));
+			}
+			else
+				System.out.println("Writing to command line");
+			
+			
 			if(cmd.hasOption("file")){
 				BufferedReader br = new BufferedReader(new FileReader(new File(cmd.getOptionValue("file"))));
 				System.out.println("Reading from file " + cmd.getOptionValue("file"));
@@ -64,13 +72,6 @@ public class API
 				System.out.println("Reading from command line.");
 				console();
 			}
-			
-//			if(cmd.hasOption("write")){
-//				System.out.println("Write to file " + cmd.getOptionValue("write"));
-//			}else
-//				System.out.println("Writing to command line");
-
-			
 		}catch(ParseException e){
 			System.out.println(e);
 			new HelpFormatter().printHelp("Query rec-me.herokuapp.com's RESTful API",  options);
@@ -87,87 +88,47 @@ public class API
 	
 	public void reader(BufferedReader br) throws IOException{
 		String input;
-		while((input = br.readLine()) != null){
-			String[] s = input.split(" ");
-			 if(s[0].equals("get")){
-				 if(s[1].equals("recs")){
-					 for(String recNum : s[2].split(","))
-						 recsFile(recNum, s.length == 4);
-				 }else if(s[1].equals("comments")){
-					 for(String comNum: s[2].split(","))
-						 commentsConsole(comNum);
-				 }else{
-					 for(String userNum: s[2].split(","))
-						 userFile(userNum);
-				 }
-			 }else if(s[0].equals("search")){
-				 searchFile(s[1],s[2].split(",",-1));
-			 }
-		}
+		while((input = br.readLine()) != null)
+			inputIdentify(input, true);
+		br.close();
 	}
 	
 	public void console() throws IOException{
-		String input = "";
-		String num = "";
-		do{
-			if(StringUtils.isNumeric(num = input.substring(input.indexOf(" ")+1))){
-				if(input.contains("recs"))
-					recsConsole(num);
-				else if(input.contains("comments"))
-					commentsConsole(num);
-				else if(input.contains("users"))
-					usersConsole(num);
-			}else
-				if(input.contains("search recs") || input.contains("search comments"))
-					searchConsole(input.substring(input.indexOf(" ")+1));
-			System.out.println("Format input as 'command info'");
-			System.out.println("Please select from 'recs ID', 'comments ID', 'users ID', 'search recs' or 'search comments'");
-			System.out.println("Select 'done' to exit");
-			System.out.print(": ");
-		}while(!(input = in.nextLine()).equals("done"));
+		String input;
+		System.out.print("Please select from 'recs ID', 'comments ID', 'users ID', 'search recs' or 'search comments'\nSelect 'done' to exit\n: ");
+		while(!(input = in.nextLine()).equals("done")){
+			inputIdentify(input, false);
+			System.out.print("Please select from 'recs ID', 'comments ID', 'users ID', 'search recs' or 'search comments'\nSelect 'done' to exit\n: ");
+		}
 		in.close();	
 	}
 	
-	private void searchConsole(String searchType) throws IOException{
-		String parameter = "";
-		String searchParameters = "?";
-		System.out.print("User: ");
-		parameter = in.nextLine();
-		if(!parameter.equals(""))
-			searchParameters += "user=" + URLEncoder.encode(parameter, "UTF-8");
-		System.out.print("Term: ");
-		parameter = in.nextLine();
-		if(!parameter.equals(""))
-			searchParameters += "&term=" + URLEncoder.encode(parameter, "UTF-8");
-		System.out.print("Date (MM/DD/YYYY): ");
-		parameter = in.nextLine();
-		if(!parameter.equals(""))
-			searchParameters += "&date=" + URLEncoder.encode(parameter, "UTF-8");
-		
-		String URL = URLBASE+"search/"+searchType+"/page/";
-		int page = 1;
-		String input = "";
-		do{
-			if(searchType.equals("recs"))
-				System.out.println(new Recs(sendGET(URL+(page++)+searchParameters, credentials)));
-			else
-				System.out.println(new Comments(sendGET(URL+(page++)+searchParameters, credentials)));
-			System.out.println("Please select from 'more' or 'done'");
-			System.out.print(":");
-		}while(!(input = in.nextLine()).equals("done"));
+	private void inputIdentify(String input, boolean reader) throws IOException{
+		String[] s = input.split(" ");
+		 if(s[0].equals("recs")){
+			 for(String recNum : s[1].split(","))
+				 recsGET(recNum, reader);
+		 }else if(s[0].equals("comments")){
+			 for(String comNum: s[1].split(","))
+				 commentsGET(comNum);
+		 }else if(s[0].equals("users")){
+			 for(String userNum: s[1].split(","))
+				 usersGET(userNum, reader);
+		 }
+		 else
+			 searchGET(s[1],s[2].split(",",-1));
 	}
 	
-	private void searchFile(String searchType, String[] parameters) throws IOException{
+	private void searchGET(String searchType, String[] parameters) throws IOException{
 		String URL = URLBASE+"search/"+searchType+"/page/";
 		String searchParameters = "?";
 		if(!parameters[0].equals(""))
-			searchParameters += "user=" + parameters[0];
+			searchParameters += "user=" + URLEncoder.encode(parameters[0], "UTF-8");
 		if(!parameters[1].equals(""))
-			searchParameters += "&term=" + parameters[1];
+			searchParameters += "&term=" + URLEncoder.encode(parameters[1], "UTF-8");
 		if(!parameters[2].equals(""))
-			searchParameters += "&date=" + parameters[2];
+			searchParameters += "&date=" + URLEncoder.encode(parameters[2], "UTF-8");
 		int page = 1;
-		System.out.println(searchParameters);
 		if(searchType.equals("recs")){
 			Recs display;
 			while(!(display = new Recs(sendGET(URL+(page++)+searchParameters, credentials))).toString().equals(""))
@@ -179,9 +140,12 @@ public class API
 		}
 	}
 	
-	private void usersConsole(String userNum) throws IOException{
+	private void usersGET(String userNum, boolean reader) throws IOException{
 		String URL = URLBASE+"users/"+userNum;
-		System.out.println(gson.fromJson(sendGET(URL, credentials), User.class));
+		if(writer != null)
+			writer.writeToFile(sendGET(URL, credentials), User.class);
+		else
+			System.out.println(gson.fromJson(sendGET(URL, credentials), User.class));
 		
 		String input = "";
 		int recPage = 1;
@@ -196,41 +160,31 @@ public class API
 			else if(input.equals("followers"))
 				System.out.println(new Following(sendGET(URL+"/followed_by", credentials)));
 			System.out.print("Please select 'recs', 'comments', 'following', 'followers' or 'done'\n:");
-		}while(!(input = in.nextLine()).equals("done"));
+		}while(!reader && !(input = in.nextLine()).equals("done"));
 	}
 	
-	private void userFile(String userNum) throws IOException{
-		String URL = URLBASE+"users/"+userNum;
-		System.out.println(gson.fromJson(sendGET(URL, credentials), User.class));
-	}
-	
-	private void commentsConsole(String comNum) throws IOException{
+	private void commentsGET(String comNum) throws IOException{
 		String URL = URLBASE+"comments/"+comNum;
-		System.out.println(new Comments(sendGET(URL, credentials)));
+		if(writer != null)
+			writer.writeToFile(sendGET(URL, credentials), Comments.class);
+		else
+			System.out.println(new Comments(sendGET(URL, credentials)));
 	}
 	
-	private void recsConsole(String recNum) throws IOException{
+	private void recsGET(String recNum, boolean reader) throws IOException{
 		String URL = URLBASE+"recs/"+recNum;
-		System.out.println(new Recs(sendGET(URL, credentials)));
+		if(writer != null)
+			writer.writeToFile(sendGET(URL, credentials), Recs.class);
+		else
+			System.out.println(new Recs(sendGET(URL, credentials)));
 		
-		String input = "";
 		int comPage = 1;
+		String input = "";
 		do{
 			if(input.equals("comments"))
 				System.out.println(new Comments(sendGET(URL+"/comments/page/"+(comPage++), credentials)));
 			System.out.print("Please select 'comments' or 'done'\n:");
-		}while(!(input = in.nextLine()).equals("done"));
-	}
-	
-	private void recsFile(String recNum, boolean coms) throws IOException{
-		String URL = URLBASE+"recs/"+recNum;
-		System.out.println(new Recs(sendGET(URL, credentials)));
-		
-		int comPage = 1;
-		Comments comments;
-		while(coms && !(comments = new Comments(sendGET(URL+"/comments/page/"+(comPage++), credentials))).toString().equals("")){
-			System.out.println(comments);
-		}
+		}while(!reader && !(input = in.nextLine()).equals("done"));
 	}
 	
 	private String sendGET(String url, String credentials) throws IOException{

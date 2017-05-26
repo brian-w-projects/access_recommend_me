@@ -2,4 +2,6 @@ recs/comments/following/followed by in user
 add in - functionality? 10-15
 
 
-refractor to combine with console methods
+provide inner classes for user and following, fix up writeToFile for those classes.
+don't write to file when nothing returned.
+combine writeToFile in API?
