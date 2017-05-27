@@ -33,7 +33,7 @@ public class Recs extends APIElement{
 	{
 		StringBuilder sb = new StringBuilder();
 		for(Map.Entry<String, Rec> entry : properties.entrySet())
-			sb.append(entry.getValue().repr());
+			sb.append(entry.getValue().repr()+"\n");
 		return(sb.toString());
 	}
 	
