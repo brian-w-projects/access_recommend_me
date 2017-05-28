@@ -7,9 +7,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.util.Base64;
 import java.util.Scanner;
@@ -20,16 +17,17 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class RecMeGet
 {
 	public String credentials;
 	public final String URLBASE = "http://rec-me.herokuapp.com/api1/";
-	public static Gson gson = new Gson();
 	public static Scanner in = new Scanner(System.in);
 	public String fileName;
 	
-	public RecMeGet(String[] args) throws IOException{
+	public RecMeGet(String[] args){
 		Options options = new Options();
 		options.addOption(Option.builder("f").longOpt("file").argName("file").hasArg().desc("Read queries from specified file. (optional)").build());
 		options.addOption(Option.builder("w").longOpt("write").argName("write").hasArg().desc("Print data to specified file. (optional)").build());
@@ -41,7 +39,7 @@ public class RecMeGet
 			CommandLine cmd = parser.parse(options,  args);
 			
 			String encoded_login = new String(Base64.getEncoder().encode(cmd.getOptionValue("l").getBytes()));
-			String token = gson.fromJson(sendGET(URLBASE + "token/new", encoded_login), Token.class).toString() + ":";
+			String token = new Gson().fromJson(RecMeAPI.sendRequest("GET", URLBASE + "token/new", encoded_login), Token.class) + ":";
 			credentials = new String(Base64.getEncoder().encode(token.getBytes()));
 			fileName = cmd.getOptionValue("write");
 
@@ -62,132 +60,97 @@ public class RecMeGet
 		}
 	}
 
-	public static void main(String[] args) throws IOException{
+	public static void main(String[] args){
 		RecMeGet ex = new RecMeGet(args);
 	}
 	
-	public void reader(BufferedReader br) throws IOException{
-		String input;
-		while((input = br.readLine()) != null)
-			inputIdentify(input.split(" "), true);
-		br.close();
+	public void reader(BufferedReader br){
+		try{
+			String input;
+			while((input = br.readLine()) != null)
+				inputIdentify(input);
+			br.close();
+		}catch(Exception e){
+			System.out.println(e);
+			System.exit(1);
+		}
 	}
 	
-	public void console() throws IOException{
+	public void console(){
 		String input;
-		System.out.print("Please select from 'recs ID', 'comments ID', 'users ID', 'search recs' or 'search comments'\nSelect 'done' to exit\n: ");
+		System.out.print("Please select a 'recs', 'comments', 'users', or 'search' command\nSelect 'done' to exit\n: ");
 		while(!(input = in.nextLine()).equals("done")){
-			inputIdentify(input.split(" "), false);
-			System.out.print("Please select from 'recs ID', 'comments ID', 'users ID', 'search recs' or 'search comments'\nSelect 'done' to exit\n: ");
+			try{
+				inputIdentify(input);
+			}
+			catch(Exception e){
+				System.out.println(e);
+			}
+			System.out.print("Please select a 'recs', 'comments', 'users', or 'search' command\nSelect 'done' to exit\n: ");
 		}
 		in.close();	
 	}
 	
-	private void inputIdentify(String[] commands, boolean reader) throws IOException{
-		 if(commands[0].equals("recs")){
-			 for(String recNum : commands[1].split(","))
-				 recsGET(recNum, reader);
-		 }else if(commands[0].equals("comments")){
-			 for(String comNum: commands[1].split(","))
-				 commentsGET(comNum, reader);
-		 }else if(commands[0].equals("users")){
-			 for(String userNum: commands[1].split(","))
-				 usersGET(userNum, reader);
-		 }else
-			 for(String searchPage: commands[3].split(","))
-			 searchGET(commands[1],commands[2].split(",",-1), searchPage);
-	}
-	
-	private void recsGET(String recNum, boolean reader) throws IOException{
-		String URL = URLBASE+"recs/"+recNum;
-		write(sendGET(URL, credentials), Recs.class);
-		
-		if(!reader){
-			int comPage = 1;
-			String input = "";
-			do{
-				if(input.equals("comments"))
-					write(sendGET(URL+"/comments/page/"+(comPage++), credentials), Comments.class);
-				System.out.print("Please select 'comments' or 'done'\n:");
-			}while(!(input = in.nextLine()).equals("done"));
+	@SuppressWarnings("unchecked")
+	private void inputIdentify(String command) throws ClassNotFoundException{
+		Pattern r = Pattern.compile("(\\w+) (\\d+(,\\d+)*) ?(\\w+)? ?(\\d+(,\\d+)*)?");
+		Matcher m = r.matcher(command);
+		String URL = "";
+		if(m.find()){
+			for(String numOne : m.group(2).split(",")){
+				URL = URLBASE + m.group(1) + "/" + numOne;
+				System.out.println(URL);
+				if(m.group(4) != null){
+					String className = "recommendation."+m.group(4).substring(0,1).toUpperCase()+m.group(4).substring(1);
+					URL += "/"+m.group(4);
+					if(m.group(5) != null){
+						URL += "/";
+						for(String numTwo : m.group(5).split(","))
+							write(RecMeAPI.sendRequest("GET", URL+"page/"+numTwo, credentials), (Class<? extends APIElement>) Class.forName(className));
+					}else
+						if(m.group(4).startsWith("f"))
+							className = "recommendation.Followings";
+						write(RecMeAPI.sendRequest("GET", URL, credentials), (Class<? extends APIElement>) Class.forName(className));
+				}else{
+					String className = "recommendation."+m.group(1).substring(0,1).toUpperCase()+m.group(1).substring(1);
+					write(RecMeAPI.sendRequest("GET", URL, credentials), (Class<? extends APIElement>) Class.forName(className));
+				}
+			}
+		}else{
+			Pattern s = Pattern.compile("(\\w+) (\\w+) ([\\w,/ ]+) ?([\\w,]+)?");
+			m = s.matcher(command);
+			if(m.find())
+				System.out.println(m.group(0));
+				System.out.println(m.group(1));
+				System.out.println(m.group(2));
+				System.out.println(m.group(3));
+				System.out.println(m.group(4));
+				if(m.group(4) != null)
+					for(String page: m.group(4).split(","))
+						searchGet(m.group(2), m.group(3).split(",",-1), page);
+				else
+					searchGet(m.group(2), m.group(3).split(",",-1), "1");
 		}
 	}
 	
-	private void commentsGET(String comNum, boolean reader) throws IOException{
-		String URL = URLBASE+"comments/"+comNum;
-		write(sendGET(URL, credentials), Comments.class);
-	}
-	
-	private void usersGET(String userNum, boolean reader) throws IOException{
-		String URL = URLBASE+"users/"+userNum;
-		write(sendGET(URL, credentials), Users.class);
-		
-		if(!reader){
-			String input = "";
-			int recPage = 1;
-			int comPage = 1;
-			do{
-				if(input.equals("recs"))
-					write(sendGET(URL+"/recs/page/"+(recPage++), credentials), Recs.class);
-				else if(input.equals("comments"))
-					write(sendGET(URL+"/comments/page/"+(comPage++), credentials), Comments.class);
-				else if(input.equals("following"))
-					write(sendGET(URL+"/following", credentials), Followings.class);
-				else if(input.equals("followers"))
-					write(sendGET(URL+"/followed_by", credentials), Followings.class);
-				System.out.print("Please select 'recs', 'comments', 'following', 'followers' or 'done'\n:");
-			}while(!(input = in.nextLine()).equals("done"));
+	@SuppressWarnings("unchecked")
+	private void searchGet(String searchType, String[] parameters, String searchPage){
+		try{
+			String URL = URLBASE+"search/"+searchType+"/page/"+searchPage;
+			String searchParameters = "?";
+			if(!parameters[0].equals(""))
+				searchParameters += "user=" + URLEncoder.encode(parameters[0], "UTF-8");
+			if(!parameters[1].equals(""))
+				searchParameters += "&term=" + URLEncoder.encode(parameters[1], "UTF-8");
+			if(!parameters[2].equals(""))
+				searchParameters += "&date=" + URLEncoder.encode(parameters[2], "UTF-8");
+			String className = "recommendation."+searchType.substring(0,1).toUpperCase()+searchType.substring(1);
+			write(RecMeAPI.sendRequest("GET", URL+searchParameters, credentials), (Class<? extends APIElement>) Class.forName(className));
+		}catch(IOException e){
+			System.out.println(e);
+		}catch(ClassNotFoundException e){
+			System.out.println(e);
 		}
-	}
-	
-	private void searchGET(String searchType, String[] parameters, String searchPage) throws IOException{
-		String URL = URLBASE+"search/"+searchType+"/page/";
-		String searchParameters = "?";
-		if(!parameters[0].equals(""))
-			searchParameters += "user=" + URLEncoder.encode(parameters[0], "UTF-8");
-		if(!parameters[1].equals(""))
-			searchParameters += "&term=" + URLEncoder.encode(parameters[1], "UTF-8");
-		if(!parameters[2].equals(""))
-			searchParameters += "&date=" + URLEncoder.encode(parameters[2], "UTF-8");
-		if(searchType.equals("recs"))
-			write(sendGET(URL+searchPage+searchParameters, credentials), Recs.class);
-		else
-			write(sendGET(URL+searchPage+searchParameters, credentials), Comments.class);
-	}
-	
-	private String sendGET(String url, String credentials) throws IOException{
-		HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
-		con.setRequestMethod("GET");
-		con.setRequestProperty("Authorization", "Basic "+credentials);
-		switch(con.getResponseCode()){
-			case HttpURLConnection.HTTP_OK:
-				BufferedReader bufferedIn = new BufferedReader(new InputStreamReader(con.getInputStream()));
-				String input;
-				StringBuffer response = new StringBuffer();
-				while((input = bufferedIn.readLine()) != null)
-					response.append(input);
-				bufferedIn.close();
-				return(response.toString());
-			case HttpURLConnection.HTTP_FORBIDDEN:
-				System.out.println(url + "\n403 FORBIDDEN: You do not have permission to access this information.");
-				break;
-			case HttpURLConnection.HTTP_INTERNAL_ERROR:
-				System.out.println(url + "\n500 INTERNAL SERVER ERROR: There has been an error.");
-				break;
-			case HttpURLConnection.HTTP_UNAUTHORIZED:
-				System.out.println(url + "\n401 UNAUTHORIZED: Please recheck login credentials.");
-				break;
-			case HttpURLConnection.HTTP_NOT_FOUND:
-				System.out.println(url + "\n404 NOT FOUND: Please check URL");
-				break;
-			case 429:
-				System.out.println(url + "\n429 TOO MANY REQUESTS: You may only make 15 requests every 15 minutes.");
-				break;
-			default:
-				System.out.println(url + "\n" + con.getResponseCode()+" ERROR: There has been an error");
-				break;
-		}
-		return(null);
 	}
 	
 	public void write(String content, Class<? extends APIElement> c){
@@ -199,11 +162,13 @@ public class RecMeGet
 					BufferedWriter bw = new BufferedWriter(new FileWriter(f, true));
 					bw.write(ele.headerRepr());
 					bw.newLine();
+					bw.flush();
 					bw.close();
 				}
 				BufferedWriter bw = new BufferedWriter(new FileWriter(f, true));
 				if(content != null)
 					bw.write(ele.repr());
+				bw.flush();
 				bw.close();
 			}else{
 				System.out.println(ele);
