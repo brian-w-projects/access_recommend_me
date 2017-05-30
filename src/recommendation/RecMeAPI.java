@@ -6,10 +6,30 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 
 import org.json.JSONObject;
 
 public class RecMeAPI {
+	public static String sendRequest(String method, String url, String credentials, String parameters){
+		if(method.equals("GET")){
+			try{
+				String searchParameters = "?";
+				while(parameters.length() != 0){
+					int quote = parameters.indexOf("\"");
+					int nextQuote = parameters.indexOf("\"", quote+1);
+					searchParameters += "&" + parameters.substring(1,quote) + URLEncoder.encode(parameters.substring(quote+1,nextQuote), "UTF-8");
+					parameters = parameters.substring(nextQuote+1);
+				}
+				return(sendRequest(method, url+searchParameters, credentials));
+			}catch(Exception e){
+				System.out.println(e);
+				return(null);
+			}	
+		}else
+			return(sendHelper(method, url, credentials, parameters));
+	}
+
 	public static String sendRequest(String method, String url, String credentials){
 		try{
 			HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
@@ -19,10 +39,10 @@ public class RecMeAPI {
 		}catch(Exception e){
 			System.out.println(e);
 			return(null);
-		}		
+		}
 	}
 	
-	public static String sendRequest(String method, String url, String credentials, String parameters){
+	private static String sendHelper(String method, String url, String credentials, String parameters){
 		try{
 			HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
 			con.setRequestMethod(method);

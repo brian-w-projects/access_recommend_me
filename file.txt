@@ -1,5 +1,32 @@
 GET recs 10
-GET recs 2,3,4,5
-GET recs 2 comments
-GET recs 2 comments 2
-POST recs title="hello there how are you" text="so much stuff" public="True"
+GET recs 10,12,13,14
+GET recs 10 comments
+GET recs 10 comments 2
+GET recs 10 comments 2,3,4
+GET comments 10
+GET comments 10,11,12
+GET users 2
+GET users 2,3,4
+GET users 2 recs
+GET users 2 recs 2
+GET users 2 recs 1,2,3
+GET users 2 comments
+GET users 2 comments 2
+GET users 2 comments 1,2,3
+GET users 2 following
+GET users 2 followed_by
+GET users 2,3,4 recs
+GET users 2,3,4 comments
+GET users 2,3,4 following
+GET users 2,3,4 followed_by
+GET search recs -p user="sara" term="jkl" date="05/20/2017"
+GET search recs 2 -p user="sara" term="jkl" date="05/20/2017"
+GET search recs 2,3,4 -p user="sara" term="jkl" date="05/20/2017"
+POST recs -p title="hello there how are you" text="so much stuff" public="True"
+PUT recs 10 -p title="hello there how are you" text="so much stuff" public="True"
+DELETE recs 10
+POST comments 10 -p text="what i'm writing"
+PUT comments 10	-p text="example"
+DELETE comments 10
+PUT users -p about_me="all about me" display="10" updates="False"
+POST follow 10

@@ -1,5 +1,13 @@
+.gitignore
+.project
+.git\
+.settings\
+bin\
+todo
+
 # Compiled class file
 *.class
+*.classpath
 
 # Log file
 *.log
@@ -11,7 +19,6 @@
 .mtj.tmp/
 
 # Package Files #
-*.jar
 *.war
 *.ear
 *.zip
