@@ -1,9 +1,7 @@
-.gitignore
 .project
 .git\
 .settings\
 bin\
-todo
 
 # Compiled class file
 *.class
