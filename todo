@@ -1,21 +1,2 @@
-recs - POST/PUT/DELETE
-	- text, title, public
-(recs text,title,public)
-(recs ID text,title,public)
-(recs ID)
-
-recs/1/comments - POST
-	- text
-(comments recs ID text)
-
-comments - PUT/DELETE
-	- text
-x (comments ID text)
-x (comments ID)
-
-users - PUT
-	- display, about_me, updates
-x(users about_me,display,updates)
-
-follow - POST/DELETE
-x (follow ID) (unfollow ID)
+Use quote syntax on parameters
+Combine get with ppd

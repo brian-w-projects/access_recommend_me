@@ -1,34 +1,5 @@
-recs 10
-recs 10,12,13,14
-recs 10 comments
-recs 10 comments 2
-recs 10 comments 2,3,4
-comments 10
-comments 10,11,12
-users 2
-users 2,3,4
-users 2 recs
-users 2 recs 2
-users 2 recs 1,2,3
-users 2 comments
-users 2 comments 2
-users 2 comments 1,2,3
-users 2 following
-users 2 followed_by
-users 2,3,4 recs
-users 2,3,4 comments
-users 2,3,4 following
-users 2,3,4 followed_by
-search recs sara,jkl,05/20/2017
-search recs sara,jkl,05/20/2017 2
-search recs sara,jkl,05/20/2017 2,3,4
-
-
-POST recs title=hello there how are you,text=so much stuff,public=True
-PUT recs 10 title=hello there how are you,text=so much stuff,public=True
-DELETE recs 10
-POST comments 10 
-PUT comments 10	text=example
-DELETE comments 10
-PUT users about_me=all about me,display=10,updates=False
-POST follow 10
+GET recs 10
+GET recs 2,3,4,5
+GET recs 2 comments
+GET recs 2 comments 2
+POST recs title="hello there how are you" text="so much stuff" public="True"
