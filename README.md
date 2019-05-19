@@ -1,10 +1,8 @@
-<h1>Access Recommend Me'S public RESTful API</h1>
-Repository found here: https://github.com/brian-w-projects/mysite
+# Access Recommend Me's public RESTful API
 
-Site found here: https://rec-me.herokuapp.com
+### This project demonstrates how to interact with my Twitter clone's RESTful API. Original site can be found [here](https://rec-me.herokuapp.com). You will need an account in order to make queries.
 
-You will need an account in order to make queries.
-
+<pre>
 Usage: Query rec-me.herokuapp.com's RESTful API
 
  -f,--file <file>     Read queries from specified file. (optional)
@@ -72,3 +70,4 @@ DELETE comments 10 [delete comment with id number 10]
 PUT users -p about_me="all about me" display="10" updates="False" [modify user's about me page]
 
 POST follow 10 [follow/unfollow user with id number 10]
+</pre>
